@@ -3,9 +3,9 @@ import pandas as pd
 import tempfile
 import sweetviz as sv
 import ydata_profiling as pp
-
 from app.insights import InsightsGenerator
 import os
+import chardet
 
 # Initialize Insights Generator
 insights_generator = InsightsGenerator()
@@ -54,9 +54,17 @@ def generate_sweetviz_report(df):
 uploaded_file = st.file_uploader("Upload your CSV dataset", type=["csv"])
 
 if uploaded_file:
-    # Load and preview dataset
+    # Handle file encoding errors
     try:
-        df = pd.read_csv(uploaded_file)
+        # Detect the encoding of the file using chardet
+        raw_data = uploaded_file.read()
+        detected_encoding = chardet.detect(raw_data)['encoding']
+        
+        # Reset file pointer to the beginning of the file
+        uploaded_file.seek(0)
+        
+        # Load the dataset using the detected encoding
+        df = pd.read_csv(uploaded_file, encoding=detected_encoding)
 
         # Handle the Arrow serialization issue: convert columns to appropriate types
         for col in df.select_dtypes(include=['object']).columns:
@@ -95,7 +103,7 @@ if uploaded_file:
                 
                 if report_path:
                     # Embed the HTML report into the app
-                    with open(report_path, "r") as report_file:
+                    with open(report_path, "r", encoding="utf-8") as report_file:
                         report_html = report_file.read()
                         st.components.v1.html(report_html, height=800)
                     
@@ -117,8 +125,11 @@ if uploaded_file:
         # AI-Generated Insights
         st.write("### AI-Generated Insights")
         input_text = f"The dataset has {df.shape[0]} rows and {df.shape[1]} columns. Summarize key patterns."
-        insights = insights_generator.generate_insights(input_text)
-        st.write(insights)
+        try:
+            insights = insights_generator.generate_insights(input_text)
+            st.write(insights)
+        except Exception as e:
+            st.error(f"Error generating AI insights: {e}")
 
         # Data Summary
         st.write("### Summary Statistics")

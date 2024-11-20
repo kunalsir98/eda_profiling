@@ -1,0 +1,33 @@
+<!-- templates/insights.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Insights</title>
+</head>
+<body>
+    <h1>Dataset Insights</h1>
+    <ul>
+        <li><strong>Number of Rows:</strong> {{ insights['Number of Rows'] }}</li>
+        <li><strong>Number of Columns:</strong> {{ insights['Number of Columns'] }}</li>
+        <li><strong>Column Names:</strong> <ul>
+            {% for col in insights['Column Names'] %}
+                <li>{{ col }}</li>
+            {% endfor %}
+        </ul></li>
+        <li><strong>Missing Values:</strong> <ul>
+            {% for col, missing in insights['Missing Values'].items() %}
+                <li>{{ col }}: {{ missing }}</li>
+            {% endfor %}
+        </ul></li>
+        <li><strong>Data Types:</strong> <ul>
+            {% for col, dtype in insights['Data Types'].items() %}
+                <li>{{ col }}: {{ dtype }}</li>
+            {% endfor %}
+        </ul></li>
+    </ul>
+
+    <a href="{{ url_for('index') }}">Back to Upload</a>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!-- templates/report.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDA Report for {{ dataset_name }}</title>
+</head>
+<body>
+    <h1>Dataset Overview: {{ dataset_name }}</h1>
+
+    <h2>Dataset Sample:</h2>
+    {{ df_sample|safe }}
+
+    <h2>Dataset Statistics:</h2>
+    <ul>
+        <li><strong>Shape:</strong> {{ data_info['Shape'] }}</li>
+        <li><strong>Columns:</strong> {{ data_info['Columns'] }}</li>
+        <li><strong>Data Types:</strong> {{ data_info['Data Types'] }}</li>
+        <li><strong>Missing Values:</strong> {{ data_info['Missing Values'] }}</li>
+        <li><strong>Summary Stats:</strong> {{ data_info['Summary Stats'] }}</li>
+    </ul>
+
+    <h2>Generate EDA Report:</h2>
+    <form method="POST">
+        <label for="eda_choice">Choose EDA Report Type:</label>
+        <select name="eda_choice" id="eda_choice">
+            <option value="ydata">YData Profiling</option>
+            <option value="sweetviz">Sweetviz</option>
+        </select>
+        <button type="submit">Generate Report</button>
+    </form>
+</body>
+</html>

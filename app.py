@@ -17,17 +17,13 @@ st.title("📊 Automated EDA with Kunal")
 # Function to generate ydata-profiling report
 def generate_ydata_profiling_report(df):
     try:
-        # Convert object columns to category type to avoid Arrow issues
         for col in df.select_dtypes(include=['object']).columns:
             df[col] = df[col].astype('category')
 
-        # Generate the ydata profiling report
         profile = pp.ProfileReport(df, title="YData Profiling Report", explorative=True)
-        
-        # Save the report to a temporary file
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
         profile.to_file(temp_file.name)
-        return temp_file.name  # Return the path to the generated report
+        return temp_file.name
     except Exception as e:
         st.error(f"Error generating YData Profiling report: {e}")
         return None
@@ -35,14 +31,10 @@ def generate_ydata_profiling_report(df):
 # Function to generate Sweetviz report
 def generate_sweetviz_report(df):
     try:
-        # Convert object columns to category type to avoid Arrow issues
         for col in df.select_dtypes(include=['object']).columns:
             df[col] = df[col].astype('category')
 
-        # Generate the Sweetviz report
         report = sv.analyze(df)
-        
-        # Save the Sweetviz report to a temporary file
         report_file = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
         report.show_html(report_file.name)
         return report_file.name
@@ -54,44 +46,41 @@ def generate_sweetviz_report(df):
 uploaded_file = st.file_uploader("Upload your CSV dataset", type=["csv"])
 
 if uploaded_file:
-    # Handle file encoding errors
     try:
-        # Detect the encoding of the file using chardet
+        # Detect encoding
         raw_data = uploaded_file.read()
         detected_encoding = chardet.detect(raw_data)['encoding']
-        
-        # Reset file pointer to the beginning of the file
         uploaded_file.seek(0)
-        
-        # Load the dataset using the detected encoding
+
+        # Read CSV with detected encoding
         df = pd.read_csv(uploaded_file, encoding=detected_encoding)
 
-        # Handle the Arrow serialization issue: convert columns to appropriate types
-        for col in df.select_dtypes(include=['object']).columns:
-            df[col] = df[col].astype('category')
+        # Apply fixes for Arrow compatibility
+        for col in df.columns:
+            if df[col].dtype == 'object':
+                try:
+                    df[col] = pd.to_numeric(df[col], errors='ignore')  # Convert to numeric where possible
+                except Exception:
+                    pass
+            if df[col].dtype == 'object':
+                df[col] = df[col].fillna("").astype(str)  # Convert remaining object columns to string
 
     except Exception as e:
         st.error(f"Error reading the CSV file: {e}")
-        df = pd.DataFrame()  # Set df as empty in case of error
+        df = pd.DataFrame()
 
-    # Check if the DataFrame is empty
     if df.empty:
         st.error("The dataset is empty. Please upload a valid CSV file.")
     else:
-        # Display a warning if the dataset is too large
-        if df.shape[0] > 100000:  # Adjust the threshold based on memory constraints
+        if df.shape[0] > 100000:
             st.warning("The dataset is large. Only a sample will be used for EDA.")
-
-            # Sample the dataset for large files
-            df_sample = df.sample(frac=0.1, random_state=42)  # Taking 10% sample, adjust as needed
+            df_sample = df.sample(frac=0.1, random_state=42)
         else:
             df_sample = df
 
-        # Show dataset preview
         st.write("### Dataset Preview")
         st.write(df_sample.head())
 
-        # EDA Options
         st.write("### Generate EDA Report")
         eda_choice = st.radio("Choose EDA Method", ("YData Profiling", "Sweetviz"))
         if st.button("Generate EDA Report"):
@@ -102,12 +91,9 @@ if uploaded_file:
                     report_path = generate_sweetviz_report(df_sample)
                 
                 if report_path:
-                    # Embed the HTML report into the app
                     with open(report_path, "r", encoding="utf-8") as report_file:
                         report_html = report_file.read()
                         st.components.v1.html(report_html, height=800)
-                    
-                    # Provide download button for the report
                     with open(report_path, "rb") as report_file:
                         st.download_button(
                             label="Download Report",
@@ -115,14 +101,10 @@ if uploaded_file:
                             file_name="eda_report.html",
                             mime="text/html"
                         )
-                    
-                    # Optionally, delete the temporary report file after displaying it
                     os.remove(report_path)
-
             except Exception as e:
                 st.error(f"Error generating the report: {e}")
 
-        # AI-Generated Insights
         st.write("### AI-Generated Insights")
         input_text = f"The dataset has {df.shape[0]} rows and {df.shape[1]} columns. Summarize key patterns."
         try:
@@ -131,6 +113,5 @@ if uploaded_file:
         except Exception as e:
             st.error(f"Error generating AI insights: {e}")
 
-        # Data Summary
         st.write("### Summary Statistics")
         st.write(df_sample.describe())
